@@ -5,43 +5,22 @@ import { useRouter } from 'next/router'
 import { ApiAuthorizationScreen } from '@/components/interfaces/ApiAuthorization/ApiAuthorization'
 import { ApiAuthorizationLoadingScreen } from '@/components/interfaces/ApiAuthorization/ApiAuthorization.Loading'
 import { OAuthAppsAuthorizeScreen } from '@/components/interfaces/Organization/OAuthApps/Consent'
-import { OAUTH_APPS_MOCK_SCENARIOS, USE_MOCKS } from '@/data/oauth-apps/mocks'
 import { withAuth } from '@/hooks/misc/withAuth'
 import { buildStudioPageTitle } from '@/lib/page-title'
 import type { NextPageWithLayout } from '@/types'
 
 const PAGE_TITLE = buildStudioPageTitle({ section: 'Authorize API Access', brand: 'Supabase' })
 
-const MOCK_SCENARIOS: Record<string, { authId: string; organizationSlug?: string }> = {
-  default: { authId: OAUTH_APPS_MOCK_SCENARIOS.vercelDeveloper },
-  reconsent: { authId: OAUTH_APPS_MOCK_SCENARIOS.vercelReconsent },
-  reconsent_all_projects: { authId: OAUTH_APPS_MOCK_SCENARIOS.vercelReconsentAllProjects },
-  role_validation: { authId: OAUTH_APPS_MOCK_SCENARIOS.vercelRoleValidation },
-  empty_org: {
-    authId: OAUTH_APPS_MOCK_SCENARIOS.vercelDeveloper,
-    organizationSlug: 'contoso-labs',
-  },
-  dynamic_client: { authId: OAUTH_APPS_MOCK_SCENARIOS.dynamicMcpClient },
-  org_bound: { authId: OAUTH_APPS_MOCK_SCENARIOS.kemalBot },
-  org_bound_all: { authId: OAUTH_APPS_MOCK_SCENARIOS.kemalBotOrgWide },
-  user_bound_all: { authId: OAUTH_APPS_MOCK_SCENARIOS.vercelAllProjects },
-}
-
 const APIAuthorizationPage: NextPageWithLayout = () => {
   const router = useRouter()
   const routerReady = router.isReady
-  const { auth_id, organization_slug, mock_scenario } = useParams()
+  const { auth_id, organization_slug } = useParams()
   const isScopedOAuthConsentEnabled = useFlag('enableScopedOAuthConsent')
-  const isScopedOAuthFlowEnabled = isScopedOAuthConsentEnabled && USE_MOCKS
-
-  const mockScenario = USE_MOCKS
-    ? (MOCK_SCENARIOS[mock_scenario ?? 'default'] ?? MOCK_SCENARIOS.default)
-    : undefined
-  const authId = mockScenario?.authId ?? auth_id
-  const organizationSlug = organization_slug ?? mockScenario?.organizationSlug
+  const isScopedOAuthFlowEnabled = isScopedOAuthConsentEnabled
 
   const projectRefParam = router.query.project_ref
-  const projectRef = (Array.isArray(projectRefParam) ? projectRefParam[0] : projectRefParam) ?? null
+  const projectRef =
+    (Array.isArray(projectRefParam) ? projectRefParam[0] : projectRefParam) ?? undefined
 
   if (!routerReady) {
     return (
@@ -61,9 +40,9 @@ const APIAuthorizationPage: NextPageWithLayout = () => {
           <title>{PAGE_TITLE}</title>
         </Head>
         <OAuthAppsAuthorizeScreen
-          authId={authId}
-          organizationSlug={organizationSlug}
-          projectRef={projectRef}
+          authId={auth_id}
+          organizationSlug={organization_slug && projectRef ? organization_slug : undefined}
+          projectRef={organization_slug && projectRef ? organization_slug : undefined}
           navigate={(destination) => router.push(destination)}
         />
       </>
